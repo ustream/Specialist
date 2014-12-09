@@ -37,7 +37,6 @@ tests = Table('tests', Base.metadata,
               Column('unix_timestamp', db.Integer, index=True),
               Column('spec_result', db.String(2000), index=True),
               Column('cookbook_name', db.String(100), index=True),
-              UniqueConstraint('hostname', 'unix_timestamp', 'spec_result', 'cookbook_name', name='uix_1')
        )
 
 Base.metadata.create_all(db.engine)
