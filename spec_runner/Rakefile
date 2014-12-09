@@ -1,0 +1,102 @@
+require 'rake'
+require 'rspec/core/rake_task'
+require 'colorize'
+require 'json'
+require 'net/http'
+require 'uri'
+require 'pathname'
+require 'fileutils'
+
+
+$REPORTS = "/tmp/reports"
+$SPEC_ENDPOINT = "http://your.specialist.host/"
+# Special version of RakeTask for serverspec which comes with better
+# reporting
+
+class ServerspecTask < RSpec::Core::RakeTask
+
+  attr_accessor :target
+  attr_accessor :tags
+  attr_accessor :cookbookname
+  # Run our serverspec task. Errors are ignored.
+  def run_task()
+    json = "#{$REPORTS}/current/#{target}.json"
+    @rspec_opts = ["--format", "json", "--out", json]
+    system("env TARGET_HOST=#{target} TARGET_TAGS=#{(tags || []).join(",")} #{spec_command}")
+    status(target, json)
+    submit_report(json, cookbookname)
+    cleanup_report(json)
+  end
+
+  # Display status of a test from its JSON output
+  def status(target, json)
+    begin
+      out = JSON.parse(File.read(json))
+      content = File.read(json)
+      hostname = `hostname`.chomp
+      content = content.gsub('localhost', hostname)
+      File.open(json, 'w') { |file| file.write(content) }
+      summary = out["summary"]
+      total = summary["example_count"]
+      failures = summary["failure_count"]
+      if failures > 0 then
+        print ("[%-3s/%-4s] " % [failures, total]).yellow, target, "\n"
+      else
+        print "[OK] ".green, target, "\n"
+      end
+    rescue Exception => e
+      print "[ERROR] ".red, target, " (#{e.message})", "\n"
+    end
+  end
+
+  #send report to Specialist server
+  def submit_report(json, cookbookname)
+    data = File.read(json)
+    uri = URI.parse($SPEC_ENDPOINT)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = uri.scheme == "https"
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    request = Net::HTTP::Post.new("/api/reports")
+    request.add_field('Content-Type', 'application/json')
+    request.body = {
+        :spec_result => data,
+        :hostname => `hostname`.chomp,
+        :cookbook_name => cookbookname
+    }.to_json
+    response = http.request(request)
+  end
+
+  #cleanup report
+  def cleanup_report(json)
+    FileUtils.rm(json)
+  end
+
+end
+
+
+task :spec    => 'spec:all'
+task :default => :spec
+
+namespace :spec do
+  task :all, [:specpath] do |t, args|
+    print "Spec path is: #{args[:specpath]}\n"
+    cookbookname = Pathname.new(args[:specpath]).basename.to_s
+    targets = []
+    specpath = "#{args[:specpath]}/spec/*"
+    Dir.glob(specpath).each do |dir|
+      next unless File.directory?(dir)
+      targets << File.basename(dir)
+    end
+    targets.each do |target|
+      print "Run serverspec tests to #{target}\n"
+      specfile_pattern = "#{args[:specpath]}/spec/#{target}/*_spec.rb"
+      spectask = ServerspecTask.new(target.to_sym)
+      ENV['TARGET_HOST'] = target
+      spectask.target = target
+      spectask.pattern = specfile_pattern
+      spectask.cookbookname = cookbookname
+      spectask.run_task
+    end
+  end
+end
+
