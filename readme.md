@@ -2,7 +2,7 @@
 
 ***What is this?***
 
-This is a heavily modified version of [this awesome little piece of code](https://github.com/vincentbernat/serverspec-example) (mad props for it, really). This tool makes you able to run serverspec locally on your production servers and post the results to a dashboard , where you can have a look at the results. This is achieved with a heavily modified Rakefile, and a simple Flask API +Angular.JS Frontend. It can be used as a dashboard, or as a really simple monitoring solutions.
+This is a heavily modified version of [this awesome little piece of code](https://github.com/vincentbernat/serverspec-example) (mad props for it, really). This tool makes you able to run serverspec locally on your production servers and post the results to a dashboard , where you can have a look at the results. This is achieved with a heavily modified Rakefile, and a simple Flask API +Angular.JS Frontend. It can be used as a dashboard, or as a really simple monitoring solution.
 
 ***Getting started***
 
@@ -38,6 +38,14 @@ ALCHEMY_URL = 'sqlite:////opt/specialist/spec.db'
 ```
 
 You should change the $SPEC_ENDPOINT constant on the top of your Rakefile as well, to send the reports to the correct place
+
+**Screenshots**
+
+List view with 30 sec autorefresh:
+![image](https://raw.githubusercontent.com/ustream/Specialist/master/screenshots/scrot1.png)
+
+Details view
+![image](https://raw.githubusercontent.com/ustream/Specialist/master/screenshots/details.png)
 
 **Contributors**
 
