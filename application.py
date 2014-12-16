@@ -35,7 +35,7 @@ tests = Table('tests', Base.metadata,
               Column('id', db.Integer, primary_key=True),
               Column('hostname', db.String(100), index=True),
               Column('unix_timestamp', db.Integer, index=True),
-              Column('spec_result', db.String(2000), index=True),
+              Column('spec_result', db.String(20000), index=True),
               Column('cookbook_name', db.String(100), index=True)
        )
 
